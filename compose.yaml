@@ -1,0 +1,42 @@
+networks:
+  monitoring:
+services:
+  zipkin:
+    image: ghcr.io/openzipkin/zipkin-slim:latest
+    container_name: zipkin
+    environment:
+      - STORAGE_TYPE=mem
+    ports:
+      - 9411:9411
+    networks:
+      - monitoring
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    user: "0"
+    restart: unless-stopped
+    ports:
+      - 9090:9090
+    environment:
+      - PUID=0
+      - PGID=0
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+  dice-server:
+    build: dice_roller/
+    container_name: dice-server
+    ports:
+      - "8080:8080"
+      - "9464:9464"
+    networks:
+      - monitoring
+
